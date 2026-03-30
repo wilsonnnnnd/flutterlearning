@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'pages/calculator_page.dart';
+import 'pages/websocket_queue_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -118,6 +119,15 @@ class _MyHomePageState extends State<MyHomePage> {
                 );
               },
               child: const Text('Open Calculator'),
+            ),
+            const SizedBox(height: 12),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const WebSocketQueuePage()),
+                );
+              },
+              child: const Text('Open WebSocket Queue'),
             ),
           ],
         ),
