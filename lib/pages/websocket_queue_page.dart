@@ -47,9 +47,6 @@ class _WebSocketQueuePageState extends State<WebSocketQueuePage> {
   @override
   void initState() {
     super.initState();
-    _sendController.addListener(() {
-      setState(() {});
-    });
   }
 
   
@@ -159,6 +156,29 @@ class _WebSocketQueuePageState extends State<WebSocketQueuePage> {
       body: Column(
         children: [
           Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+            child: Row(
+              children: [
+                Tooltip(
+                  message: _connected ? 'Connected' : 'Disconnected',
+                  child: Icon(
+                    Icons.circle,
+                    size: 14,
+                    color: _connected ? Colors.green : Colors.red,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(_connected ? 'Connected' : 'Disconnected', style: const TextStyle(fontSize: 14)),
+                const Spacer(),
+                ElevatedButton.icon(
+                  onPressed: _connected ? _disconnect : _connect,
+                  icon: Icon(_connected ? Icons.close : Icons.play_arrow),
+                  label: Text(_connected ? 'Close' : 'Start'),
+                ),
+              ],
+            ),
+          ),
+          Padding(
             padding: const EdgeInsets.all(12.0),
             child: Row(
               children: [
@@ -168,36 +188,48 @@ class _WebSocketQueuePageState extends State<WebSocketQueuePage> {
                     decoration: const InputDecoration(labelText: 'WebSocket URL'),
                   ),
                 ),
-                const SizedBox(width: 8),
-                ElevatedButton(onPressed: _connected ? null : _connect, child: const Text('Start')),
-                const SizedBox(width: 8),
-                ElevatedButton(onPressed: _connected ? _disconnect : null, child: const Text('Close')),
               ],
             ),
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12.0),
-            child: Row(
-              children: [
-                SizedBox(
-                  width: 60,
-                  child: TextField(
-                    controller: _senderController,
-                    decoration: const InputDecoration(labelText: 'Sender'),
-                  ),
+            child: Card(
+              margin: EdgeInsets.zero,
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 110,
+                      child: TextField(
+                        controller: _senderController,
+                        decoration: const InputDecoration(labelText: 'Sender', isDense: true),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TextField(
+                        controller: _sendController,
+                        decoration: const InputDecoration(labelText: 'Send Message', isDense: true),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    ValueListenableBuilder<TextEditingValue>(
+                      valueListenable: _sendController,
+                      builder: (context, value, child) {
+                        final enabled = _connected && value.text.trim().isNotEmpty;
+                        return ElevatedButton.icon(
+                          onPressed: enabled ? _send : null,
+                          icon: const Icon(Icons.send),
+                          label: const Text('Send'),
+                        );
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                    TextButton(onPressed: _clear, child: const Text('Clear')),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TextField(
-                    controller: _sendController,
-                    decoration: const InputDecoration(labelText: 'Send Message'),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                ElevatedButton(onPressed: _send, child: const Text('Send')),
-                const SizedBox(width: 8),
-                ElevatedButton(onPressed: _clear, child: const Text('Clear')),
-              ],
+              ),
             ),
           ),
           const Divider(),
@@ -209,79 +241,23 @@ class _WebSocketQueuePageState extends State<WebSocketQueuePage> {
                     padding: const EdgeInsets.all(12),
                     itemCount: _queue.length,
                     itemBuilder: (context, index) {
-                            final item = _queue[index];
-                            if (item is QueueItem && item.structured) {
-                              return Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Container(
-                                    width: 96,
-                                    padding: const EdgeInsets.all(8),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(item.sender ?? 'unknown', style: const TextStyle(fontWeight: FontWeight.bold)),
-                                      ],
-                                    ),
-                                  ),
-                                  Expanded(
-                                    child: Card(
-                                      child: ListTile(
-                                        title: Text(item.type ?? 'unknown'),
-                                        subtitle: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            const SizedBox(height: 4),
-                                            Text('Message: ${item.message}'),
-                                            if (item.timestamp != null) ...[
-                                              const SizedBox(height: 4),
-                                              Text('Timestamp: ${item.timestamp}', style: const TextStyle(fontSize: 12, color: Colors.grey)),
-                                            ]
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              );
-                            } else if (item is QueueItem) {
-                              return Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Container(
-                                    width: 96,
-                                    padding: const EdgeInsets.all(8),
-                                    child: const SizedBox.shrink(),
-                                  ),
-                                  Expanded(
-                                    child: Card(
-                                      child: ListTile(
-                                        title: Text(item.raw),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              );
-                            } else {
-                              return Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Container(
-                                    width: 96,
-                                    padding: const EdgeInsets.all(8),
-                                    child: const SizedBox.shrink(),
-                                  ),
-                                  Expanded(
-                                    child: Card(
-                                      child: ListTile(
-                                        title: Text(item.toString()),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              );
-                            }
-                          },
+                      final item = _queue[index];
+                      if (item is QueueItem && item.structured) {
+                        final initials = (item.sender ?? 'U').isNotEmpty ? (item.sender ?? 'U')[0].toUpperCase() : 'U';
+                        return Card(
+                          child: ListTile(
+                            leading: CircleAvatar(child: Text(initials)),
+                            title: Text(item.message ?? ''),
+                            subtitle: Text(item.type ?? ''),
+                            trailing: item.timestamp != null ? Text(item.timestamp!, style: const TextStyle(fontSize: 12, color: Colors.grey)) : null,
+                          ),
+                        );
+                      } else if (item is QueueItem) {
+                        return Card(child: ListTile(title: Text(item.raw)));
+                      } else {
+                        return Card(child: ListTile(title: Text(item.toString())));
+                      }
+                    },
                   ),
           ),
         ],
