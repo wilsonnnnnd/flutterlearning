@@ -248,8 +248,15 @@ class _WebSocketQueuePageState extends State<WebSocketQueuePage> {
                           child: ListTile(
                             leading: CircleAvatar(child: Text(initials)),
                             title: Text(item.message ?? ''),
-                            subtitle: Text(item.type ?? ''),
-                            trailing: item.timestamp != null ? Text(item.timestamp!, style: const TextStyle(fontSize: 12, color: Colors.grey)) : null,
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(item.type ?? ''),
+                                if (item.timestamp != null) ...[
+                                  Text(item.timestamp!, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                                ]
+                              ],
+                            ),
                           ),
                         );
                       } else if (item is QueueItem) {
